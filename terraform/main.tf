@@ -15,6 +15,10 @@ resource "aws_ecs_cluster" "demo-app-cluster" {
 resource "aws_ecr_repository" "demo_repo" {
   name = "demo-repo"
 }
+variable "image_uri" {
+  type = string
+}
+
 resource "aws_ecs_task_definition" "demo-app-task" {
   family                   = "demo-app-task"
   container_definitions    = jsonencode([{
