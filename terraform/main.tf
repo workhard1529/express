@@ -9,24 +9,24 @@ resource "aws_vpc" "demo_vpc" {
     Name = "demo_vpc"
   }
 }
+resource "aws_ecs_cluster" "demo-app-cluster" {
+  name = "demo-app-cluster"
+}
 resource "aws_ecr_repository" "demo_repo" {
   name = "demo-repo"
 }
-resource "aws_ecs_task_definition" "my_task_def" {
-  family                   = "my_task_def"
+resource "aws_ecs_task_definition" "demo-app-task" {
+  family                   = "demo-app-task"
   container_definitions    = jsonencode([{
-    name      = "demo-container"
-    image     = "${aws_ecr_repository.demo_repo.repository_url}:latest"
-    memory    = 128
-    cpu       = 128
+    name      = "demo-app-container"
+    image     = var.image_uri
+    portMappings = [{
+      containerPort = 3000
+      hostPort      = 0
+      protocol      = "tcp"
+    }]
   }])
-}
-resource "aws_ecs_service" "demo_ecs" {
-  name            = "demo_ecs"
-  task_definition = aws_ecs_task_definition.my_task_def.arn
-  desired_count   = 1
-
-  network_configuration {
+   network_configuration {
     subnets         = aws_subnet.private.*.id
     security_groups = [aws_security_group.sg.id]
     assign_public_ip = true
@@ -34,12 +34,35 @@ resource "aws_ecs_service" "demo_ecs" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.my_target_group.arn
-    container_name   = "demo-container"
-    container_port   = 80
+    container_name   = "demo-app-container"
+    container_port   = 3000
   }
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  network_mode             = "awsvpc"
 
-  depends_on = [
-    aws_iam_role.ecs_task_execution_role,
-    aws_iam_role_policy.ecs_task_execution_role,
-  ]
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn      = aws_iam_role.ecs_task_role.arn
+}
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecs-task-execution-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy_attachment" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  role       = aws_iam_role.ecs_task_execution_role.name
+}
+
+resource "aws_iam_role" "ecs_task_role" {
+  name = "ecs-task-role"
+  assume_role_policy = jsonencode({
+  })
 }
