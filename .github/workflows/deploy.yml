@@ -5,8 +5,8 @@ on:
       - main
 
 env:
-  AWS_REGION: us-west-2
-  ECR_REGISTRY: your-aws-account-id.dkr.ecr.us-west-2.amazonaws.com
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 326640379631.dkr.ecr.us-west-2.amazonaws.com
   ECS_CLUSTER: your-ecs-cluster-name
   ECS_SERVICE: your-ecs-service-name
   IMAGE_TAG: ${{ github.sha }}
